@@ -1,326 +1,326 @@
-
 Vue.config.delimiters = ['${', '}$'];
-    var Bonus = Vue.extend({
-        type: 'bonus-component',
-        template: $('div.bonus-wrapper').html(), // Fuck tap lam moi ra cho nay <3
-        data: function () {
-            return {
-                filter_text: '',
-                current_user_profile: null,
-                user_data_dict: null,
-                lib_data_dict: null,
-                bonus_ready: false,
-                render_lib_data_list : [],
-                render_user_data_list : [],
-                dictionary: {
-                    plus: gettext('EXTRA') + " (" + gettext("UP TO 20") + "%)",
-                    minus: gettext('MINUS'),
-                    zero: gettext('ZERO')
-                },
-                month_name: '',
-                current_quarter: {},
-                total_score:{}
+var Bonus = Vue.extend({
+    type: 'bonus-component',
+    template: $('div.bonus-wrapper').html(), // Fuck tap lam moi ra cho nay <3
+    data: function () {
+        return {
+            filter_text: '',
+            current_user_profile: null,
+            user_data_dict: null,
+            lib_data_dict: null,
+            bonus_ready: false,
+            render_lib_data_list : [],
+            render_user_data_list : [],
+            dictionary: {
+                plus: gettext('EXTRA') + " (" + gettext("UP TO 20") + "%)",
+                minus: gettext('MINUS'),
+                zero: gettext('ZERO')
+            },
+            month_name: '',
+            current_quarter: {},
+            total_score:{}
+        }
+    },
+    events: {
+        'fetch_current_quarter': function(current_quarter){
+            var that = this
+            if(that.month == 1){
+                that.month_name = that.$parent.month_1_name.toUpperCase()
             }
+            if(that.month == 2){
+                that.month_name = that.$parent.month_2_name.toUpperCase()
+            }
+            if(that.month == 3){
+                that.month_name = that.$parent.month_3_name.toUpperCase()
+            }
+            that.$set('current_quarter',current_quarter)
         },
-        events: {
-            'fetch_current_quarter': function(current_quarter){
-                var that = this
-                if(that.month == 1){
-                    that.month_name = that.$parent.month_1_name.toUpperCase()
+        'fetch_exscore_lib': function(){
+            var that = this
+            // Fetch data from $parent
+            that.$set('lib_data_dict',that.$parent.exscore_lib_data)
+            that.render_exscore_lib()
+            that.$emit('fetch_user_exscore_group')
+        },
+        'fetch_exscore': function(){
+            var that = this
+            // Fetch data from $parent
+            that.$set('user_data_dict',that.$parent.exscore_user_data[that.month])
+            // Process render data
+            that.render_exscore_user()
+            setTimeout(function(){
+                if (that.bonus_ready == false){
+                    that.$set('bonus_ready',true)
                 }
-                if(that.month == 2){
-                    that.month_name = that.$parent.month_2_name.toUpperCase()
+            },2000)
+            that.$emit('fetch_user_exscore_group')
+        },
+        'fetch_user_profile_from_parent': function(){
+            var that = this
+            that.$set('current_user_profile',that.$parent.current_user_profile)
+        },
+        'fetch_user_exscore_group': function() {
+            var that = this
+            if(that.lib_data_dict != null && that.user_data_dict != null){
+
+                for(var key in that.user_data_dict){
+                    that.user_data_dict[key].map(function(user_exscore_elem){
+
+                        // Get lib index
+                        var group_id_list = that.lib_data_dict[key].map(function(lib_exscore_elem){
+                            return lib_exscore_elem.id
+                        })
+                        var group_index = group_id_list.indexOf(user_exscore_elem.exscore_lib)
+                        // Get group
+                        user_exscore_elem.group = that.lib_data_dict[key][group_index].group
+                    })
                 }
-                if(that.month == 3){
-                    that.month_name = that.$parent.month_3_name.toUpperCase()
-                }
-                that.$set('current_quarter',current_quarter)
-            },
-            'fetch_exscore_lib': function(){
-                var that = this
-                // Fetch data from $parent
-                that.$set('lib_data_dict',that.$parent.exscore_lib_data)
-                that.render_exscore_lib()
-                that.$emit('fetch_user_exscore_group')
-            },
-            'fetch_exscore': function(){
-                var that = this
-                // Fetch data from $parent
-                that.$set('user_data_dict',that.$parent.exscore_user_data[that.month])
-                // Process render data
                 that.render_exscore_user()
-                setTimeout(function(){
-                    if (that.bonus_ready == false){
-                        that.$set('bonus_ready',true)
-                    }
-                },2000)
-                that.$emit('fetch_user_exscore_group')
-            },
-            'fetch_user_profile_from_parent': function(){
-                var that = this
-                that.$set('current_user_profile',that.$parent.current_user_profile)
-            },
-            'fetch_user_exscore_group': function() {
-                var that = this
-                if(that.lib_data_dict != null && that.user_data_dict != null){
-
-                    for(var key in that.user_data_dict){
-                        that.user_data_dict[key].map(function(user_exscore_elem){
-
-                            // Get lib index
-                            var group_id_list = that.lib_data_dict[key].map(function(lib_exscore_elem){
-                                return lib_exscore_elem.id
-                            })
-                            var group_index = group_id_list.indexOf(user_exscore_elem.exscore_lib)
-                            // Get group
-                            user_exscore_elem.group = that.lib_data_dict[key][group_index].group
-                        })
-                    }
-                    that.render_exscore_user()
-                }
-            },
-            'fetch_user_id': function(){
-                var that = this
-                that.$set('user_id',that.$parent.user_id)
             }
         },
-        ready: function(){
-            this.$emit('fetch_current_user_profile')
-            this.$emit('fetch_user_id')
+        'fetch_user_id': function(){
+            var that = this
+            that.$set('user_id',that.$parent.user_id)
+        }
+    },
+    ready: function(){
+        this.$emit('fetch_current_user_profile')
+        this.$emit('fetch_user_id')
+    },
+    watch: {
+        'total_score': {
+            handler: function(value, old_value){
+                this.$dispatch('update_exscore',this.month,value)
+            }
         },
-        watch: {
-            'total_score': {
-                handler: function(value, old_value){
-                    this.$dispatch('update_exscore',this.month,value)
-                }
-            },
-            'bonus_ready': {
-                handler: function(newVal,oldVal){
-                    if(newVal == true){
-                        $('div#bonus-ready').hide()
-                        $('div#bonus-modal-header').show()
-                    }
-                }
-            },
-            'render_user_data_list': {
-                handler: function(val,oldValue){
-
-                    var that = this
-                    var data = that.calculate_final_score();
-                    that.$set('total_score',data)
-                },
-                deep: true
-            },
-            'filter_text': {
-                handler: function(newVal,oldVal){
-                    var that = this
-                    that.restoreExscoreLib()
-                    that.searchExscoreLib()
+        'bonus_ready': {
+            handler: function(newVal,oldVal){
+                if(newVal == true){
+                    $('div#bonus-ready').hide()
+                    $('div#bonus-modal-header').show()
                 }
             }
         },
-        props:[
-            'month'
-        ],
-        methods: {
-            render_exscore_user: function(){
-                var that = this
-                var render_data_index = 0
-                // Ánh xạ sang lib_data_dict để lấy group
-                for (var key in that.user_data_dict){
+        'render_user_data_list': {
+            handler: function(val,oldValue){
 
-                    var temp_dict = {
-                        slug: key,
-                        text: that.dictionary[key],
-                        lan: gettext("Language"),
-                        data: that.extract_exscore_v2(that.user_data_dict[key]),
-                        sum_score: that.get_sum_exscore(that.user_data_dict[key],key)
-                    }
-                    that.$set('render_user_data_list['+(render_data_index++)+']',temp_dict)
-                }
-            },
-            render_exscore_lib: function(){
                 var that = this
-                // Process render data
-                var render_data_index = 0
-                for (var key in that.lib_data_dict){
-                    var temp_dict = {
-                        slug: key,
-                        text: that.dictionary[key],
-                        data: that.extract_exscore_v2(that.lib_data_dict[key]),
-                    }
-                    that.$set('render_lib_data_list['+(render_data_index++)+']',temp_dict)
-                }
+                var data = that.calculate_final_score();
+                that.$set('total_score',data)
             },
-            restoreExscoreLib: function(){
+            deep: true
+        },
+        'filter_text': {
+            handler: function(newVal,oldVal){
                 var that = this
-                that.$emit('fetch_exscore_lib')
-            },
-            searchExscoreLib: function(){
-                var that = this
-                if (that.filter_text != '') {
-                    console.log('starting searching with ' + that.filter_text)
-                    // First is to restore original data
-                    // Now to filter
-                    var data = Object.assign({},that.lib_data_dict)
-                    for (var key in data){
-                        var _data = data[key].filter(function(elem){
-                            return (
-                                // Search co dau
-                                (
-                                    elem.name.toLowerCase().indexOf(that.filter_text.trim().toLowerCase()) != -1 || // co dau
-                                    elem.code.toLowerCase().indexOf(that.filter_text.trim().toLowerCase()) != -1
-                                )
-                                ||
-                                // Search khong dau
-                                (
-                                    latinize(elem.name.toLowerCase()).indexOf(that.filter_text.trim().toLowerCase()) != -1 || // co dau
-                                    latinize(elem.code.toLowerCase()).indexOf(that.filter_text.trim().toLowerCase()) != -1
-                                )
+                that.restoreExscoreLib()
+                that.searchExscoreLib()
+            }
+        }
+    },
+    props:[
+        'month'
+    ],
+    methods: {
 
+        render_exscore_user: function(){
+            var that = this
+            var render_data_index = 0
+            // Ánh xạ sang lib_data_dict để lấy group
+            for (var key in that.user_data_dict){
+
+                var temp_dict = {
+                    slug: key,
+                    text: that.dictionary[key],
+                    lan: gettext("Language"),
+                    data: that.extract_exscore_v2(that.user_data_dict[key]),
+                    sum_score: that.get_sum_exscore(that.user_data_dict[key],key)
+                }
+                that.$set('render_user_data_list['+(render_data_index++)+']',temp_dict)
+            }
+        },
+        render_exscore_lib: function(){
+            var that = this
+            // Process render data
+            var render_data_index = 0
+            for (var key in that.lib_data_dict){
+                var temp_dict = {
+                    slug: key,
+                    text: that.dictionary[key],
+                    data: that.extract_exscore_v2(that.lib_data_dict[key]),
+                }
+                that.$set('render_lib_data_list['+(render_data_index++)+']',temp_dict)
+            }
+        },
+        restoreExscoreLib: function(){
+            var that = this
+            that.$emit('fetch_exscore_lib')
+        },
+        searchExscoreLib: function(){
+            var that = this
+            if (that.filter_text != '') {
+                console.log('starting searching with ' + that.filter_text)
+                // First is to restore original data
+                // Now to filter
+                var data = Object.assign({},that.lib_data_dict)
+                for (var key in data){
+                    var _data = data[key].filter(function(elem){
+                        return (
+                            // Search co dau
+                            (
+                                elem.name.toLowerCase().indexOf(that.filter_text.trim().toLowerCase()) != -1 || // co dau
+                                elem.code.toLowerCase().indexOf(that.filter_text.trim().toLowerCase()) != -1
                             )
-                        })
-                        data[key] = _data
-                    }
+                            ||
+                            // Search khong dau
+                            (
+                                latinize(elem.name.toLowerCase()).indexOf(that.filter_text.trim().toLowerCase()) != -1 || // co dau
+                                latinize(elem.code.toLowerCase()).indexOf(that.filter_text.trim().toLowerCase()) != -1
+                            )
 
-                    that.$set('lib_data_dict',data)
-                    that.render_exscore_lib()
+                        )
+                    })
+                    data[key] = _data
                 }
-            },
-            removeExscore: function(month,render_data_index,type,index_in_user_data_dict){
-                var that = this;
-                // Remove element in real dict
-                var data = that.user_data_dict[type][index_in_user_data_dict]
 
-                cloudjetRequest.ajax({
-                    type: 'DELETE',
-                    url: '/api/v2/exscore/' + data.id + '/',
-                    data: {},
-                    success: function(res){
-                        that.user_data_dict[type].$remove(data) // Remove in frontend
-                        that.$dispatch('fetch_user_exscore')
-                    }
-                })
-            },
-            calculate_final_score: function(){
-                console.log('triggered calculate_final_score')
-                var that = this
-                var zero_score = that.get_sum_exscore(that.user_data_dict['zero'],'zero')
-                var minus_score = that.get_sum_exscore(that.user_data_dict['minus'],'minus')
-                var plus_score = that.get_sum_exscore(that.user_data_dict['plus'],'plus')
-                var data = {
+                that.$set('lib_data_dict',data)
+                that.render_exscore_lib()
+            }
+        },
+        removeExscore: function(month,render_data_index,type,index_in_user_data_dict){
+            var that = this;
+            // Remove element in real dict
+            var data = that.user_data_dict[type][index_in_user_data_dict]
 
-                    zero: zero_score > 0 ? true : false,
-                    score: plus_score - minus_score
+            cloudjetRequest.ajax({
+                type: 'DELETE',
+                url: '/api/v2/exscore/' + data.id + '/',
+                data: {},
+                success: function(res){
+                    that.user_data_dict[type].$remove(data) // Remove in frontend
+                    that.$dispatch('fetch_user_exscore')
                 }
-                return data
-            },
-            get_sum_exscore: function(list_data, score_type){
+            })
+        },
+        calculate_final_score: function(){
+            console.log('triggered calculate_final_score')
+            var that = this
+            var zero_score = that.get_sum_exscore(that.user_data_dict['zero'],'zero')
+            var minus_score = that.get_sum_exscore(that.user_data_dict['minus'],'minus')
+            var plus_score = that.get_sum_exscore(that.user_data_dict['plus'],'plus')
+            var data = {
 
-                var score = list_data.reduce(function(a,b){
-                    if(score_type=='zero') return a + 1
-                    return a + b.employee_points;
-                },0);
-                if(score_type == 'plus'){
-                    score = score <= 20 ? score: 20
+                zero: zero_score > 0 ? true : false,
+                score: plus_score - minus_score
+            }
+            return data
+        },
+        get_sum_exscore: function(list_data, score_type){
+
+            var score = list_data.reduce(function(a,b){
+                if(score_type=='zero') return a + 1
+                return a + b.employee_points;
+            },0);
+            if(score_type == 'plus'){
+                score = score <= 20 ? score: 20
+            }
+            return score;
+        },
+        addExscore: function(month,exscore){
+            var that = this;
+            var data = {
+                month: that.month,
+                user_id: that.user_id,
+                exscore_lib_id: exscore.id,
+                group: exscore.group
+            }
+            // Remove element in real dict
+            cloudjetRequest.ajax({
+                type: 'POST',
+                url: '/api/v2/exscore/',
+                data: JSON.stringify(data),
+                contentType:'application/json',
+                success: function(res){
+                    that.$dispatch('fetch_user_exscore')
                 }
-                return score;
-            },
-            addExscore: function(month,exscore){
-                var that = this;
-                var data = {
-                    month: that.month,
-                    user_id: that.user_id,
-                    exscore_lib_id: exscore.id,
-                    group: exscore.group
-                }
-                // Remove element in real dict
-                cloudjetRequest.ajax({
-                    type: 'POST',
-                    url: '/api/v2/exscore/',
-                    data: JSON.stringify(data),
-                    contentType:'application/json',
-                    success: function(res){
-                        that.$dispatch('fetch_user_exscore')
-                    }
-                })
-            },
-            extract_lib_exscore: function(title,sum_list){
-                // Clone to new object
+            })
+        },
+        extract_lib_exscore: function(title,sum_list){
+            // Clone to new object
 
-                var sum_list_res = jQuery.extend(true, {}, sum_list); // Cloning is required
+            var sum_list_res = jQuery.extend(true, {}, sum_list); // Cloning is required
 
-                var that = this
-                // Extract exscore with lib
-                var exscore_lib_list = [{
-                    order: 'I',
-                    is_exscore: false,
-                    name: 'Điểm ' + title + ' chung',
-                    category: 'first'
-                }];
-                var exscore_list = [{
-                    order: 'II',
-                    is_exscore: false,
-                    name: 'Điểm ' + title + ' chuyên môn',
-                    category: 'first'
-                }];
-                for(var item in sum_list_res){
-                    sum_list_res[item].index = item;
+            var that = this
+            // Extract exscore with lib
+            var exscore_lib_list = [{
+                order: 'I',
+                is_exscore: false,
+                name: 'Điểm ' + title + ' chung',
+                category: 'first'
+            }];
+            var exscore_list = [{
+                order: 'II',
+                is_exscore: false,
+                name: 'Điểm ' + title + ' chuyên môn',
+                category: 'first'
+            }];
+            for(var item in sum_list_res){
+                sum_list_res[item].index = item;
+                exscore_lib_list.push(sum_list_res[item])
+            }
+            // Sort into category
+            exscore_lib_list = that.sort_with_group(exscore_lib_list);
+            exscore_lib_list = exscore_lib_list.slice(1,exscore_lib_list.length);
+
+            exscore_list = that.sort_with_group(exscore_list);
+            exscore_list = exscore_list.slice(1,exscore_list.length);
+
+
+            sum_list_res = exscore_lib_list.concat(exscore_list);
+            return sum_list_res;
+        },
+        extract_exscore_v2: function(sum_list){
+            var that = this
+            var sum_list_res = jQuery.extend(true, [], sum_list); // Cloning is required
+            for(var item in sum_list_res){
+                sum_list_res[item].index = item;
+            }
+            sum_list_res = that.sort_with_group(sum_list_res);
+            return sum_list_res
+        },
+        extract_exscore: function(title,sum_list){
+            // Clone to new object
+
+            var sum_list_res = jQuery.extend(true, {}, sum_list); // Cloning is required
+
+            var that = this
+            // Extract exscore with lib
+            var exscore_lib_list = [{
+                order: 'I',
+                is_exscore: false,
+                name: 'Điểm ' + title + ' chung',
+                category: 'first'
+            }];
+            var exscore_list = [{
+                order: 'II',
+                is_exscore: false,
+                name: 'Điểm ' + title + ' chuyên môn',
+                category: 'first'
+            }];
+            for(var item in sum_list_res){
+                sum_list_res[item].index = item;
+                if(sum_list_res[item].exscore_lib == null){
+                    exscore_list.push(sum_list_res[item])
+                }else{
                     exscore_lib_list.push(sum_list_res[item])
                 }
-                // Sort into category
-                exscore_lib_list = that.sort_with_group(exscore_lib_list);
-                exscore_lib_list = exscore_lib_list.slice(1,exscore_lib_list.length);
+            }
+            // Sort into category
+            exscore_lib_list = that.sort_with_group(exscore_lib_list);
+            exscore_lib_list = exscore_lib_list.slice(1,exscore_lib_list.length);
 
-                exscore_list = that.sort_with_group(exscore_list);
-                exscore_list = exscore_list.slice(1,exscore_list.length);
-
-
-                sum_list_res = exscore_lib_list.concat(exscore_list);
-                return sum_list_res;
-            },
-            extract_exscore_v2: function(sum_list){
-                var that = this
-                var sum_list_res = jQuery.extend(true, [], sum_list); // Cloning is required
-                for(var item in sum_list_res){
-                    sum_list_res[item].index = item;
-                }
-                sum_list_res = that.sort_with_group(sum_list_res);
-                return sum_list_res
-            },
-            extract_exscore: function(title,sum_list){
-                // Clone to new object
-
-                var sum_list_res = jQuery.extend(true, {}, sum_list); // Cloning is required
-
-                var that = this
-                // Extract exscore with lib
-                var exscore_lib_list = [{
-                    order: 'I',
-                    is_exscore: false,
-                    name: 'Điểm ' + title + ' chung',
-                    category: 'first'
-                }];
-                var exscore_list = [{
-                    order: 'II',
-                    is_exscore: false,
-                    name: 'Điểm ' + title + ' chuyên môn',
-                    category: 'first'
-                }];
-                for(var item in sum_list_res){
-                    sum_list_res[item].index = item;
-                    if(sum_list_res[item].exscore_lib == null){
-                        exscore_list.push(sum_list_res[item])
-                    }else{
-                        exscore_lib_list.push(sum_list_res[item])
-                    }
-                }
-                // Sort into category
-                exscore_lib_list = that.sort_with_group(exscore_lib_list);
-                exscore_lib_list = exscore_lib_list.slice(1,exscore_lib_list.length);
-
-                exscore_list = that.sort_with_group(exscore_list);
-                exscore_list = exscore_list.slice(1,exscore_list.length);
+            exscore_list = that.sort_with_group(exscore_list);
+            exscore_list = exscore_list.slice(1,exscore_list.length);
 
 
                 sum_list_res = exscore_lib_list.concat(exscore_list);
@@ -333,59 +333,59 @@ Vue.config.delimiters = ['${', '}$'];
                 var sum_list = [];
                 // Extract exscore with category
 
-                // Get unique group list
-                var _sum_list_index = 0;
-                var cloned_list_data = Object.assign([],list_data)
-                cloned_list_data.map(function(elem,index,_cloned_list_data){
-                    // Set flag is_exscore for exscore
-                    elem.is_exscore = true
-                    if(!(elem.group in group_container) && elem.group != null){
-                        if(typeof group_container[elem.group] == 'undefined'){
-                            group_container[elem.group] = {}
-                        }
-                        group_container[elem.group].ready = true
-                        group_container[elem.group].index = _sum_list_index
-                        _sum_list[_sum_list_index] = []
-                        _sum_list[_sum_list_index++].push({
-                            name: elem.group,
-                            is_exscore: false,
-                            category: 'second'
-                        });
+            // Get unique group list
+            var _sum_list_index = 0;
+            var cloned_list_data = Object.assign([],list_data)
+            cloned_list_data.map(function(elem,index,_cloned_list_data){
+                // Set flag is_exscore for exscore
+                elem.is_exscore = true
+                if(!(elem.group in group_container) && elem.group != null){
+                    if(typeof group_container[elem.group] == 'undefined'){
+                        group_container[elem.group] = {}
                     }
-                })
-                // Filter with group
-                for (var group in group_container){
-                    var list = cloned_list_data.filter(function(elem){
-                        return elem.group == group
-                    })
-                    _sum_list[group_container[group].index] = _sum_list[group_container[group].index].concat(list)
+                    group_container[elem.group].ready = true
+                    group_container[elem.group].index = _sum_list_index
+                    _sum_list[_sum_list_index] = []
+                    _sum_list[_sum_list_index++].push({
+                        name: elem.group,
+                        is_exscore: false,
+                        category: 'second'
+                    });
                 }
-                // Return rendered data
-                _sum_list.map(function(elem){
-                    sum_list = sum_list.concat(elem)
+            })
+            // Filter with group
+            for (var group in group_container){
+                var list = cloned_list_data.filter(function(elem){
+                    return elem.group == group
                 })
-
-                return sum_list;
-            },
-            sort_with_group_to_dict: function(list_data){
-                var data_container = {};
-                var new_list = list_data.map(function(elem,index,array){
-                    var key = elem.category.replace(/\s+/g, '_');
-
-                    if(key in data_container){
-                        data_container[key].push(elem);
-                    }
-                    else{
-                        data_container[key]= [];
-                        data_container[key].push(elem);
-                    }
-                    return elem;
-                });
-                return data_container;
+                _sum_list[group_container[group].index] = _sum_list[group_container[group].index].concat(list)
             }
+            // Return rendered data
+            _sum_list.map(function(elem){
+                sum_list = sum_list.concat(elem)
+            })
+
+            return sum_list;
+        },
+        sort_with_group_to_dict: function(list_data){
+            var data_container = {};
+            var new_list = list_data.map(function(elem,index,array){
+                var key = elem.category.replace(/\s+/g, '_');
+
+                if(key in data_container){
+                    data_container[key].push(elem);
+                }
+                else{
+                    data_container[key]= [];
+                    data_container[key].push(elem);
+                }
+                return elem;
+            });
+            return data_container;
         }
-    });
-    Vue.component('bonus',Bonus);
+    }
+});
+Vue.component('bonus',Bonus);
 
 
 
@@ -404,7 +404,7 @@ function filter_kpi(val, parent_id) {
     var listKey = Object.keys(val);
 
     listKey.forEach(function (key) {
-        if (val[key].refer_to == parent_id && val[key].old_weight > 0) {
+        if (parseInt(val[key].refer_to) === parseInt(parent_id) && val[key].old_weight > 0) {
             listOfObjects.push(val[key]);
         } else if (parent_id == null || listKey.indexOf(String(parent_id)) < 0) {
             // truong hop kpi cha duoc phan cong
@@ -413,9 +413,42 @@ function filter_kpi(val, parent_id) {
             }
         }
     });
-
     return listOfObjects;
 }
+function getKPIParent(kpi_list,excludeParentID){
+    var result = {};
+    // KPI cha duoc phan cong
+    var listKey = Object.keys(kpi_list)
+    var listKPIList = listKey.map(function(kpi_id){
+        return kpi_list[kpi_id]
+    })
+    var filteredKPIParent = listKPIList.filter(function(elm){
+        var baseCondition = excludeParentID.indexOf(elm.id) === -1 // id must not in excluded list
+        var condition2 = (
+            elm.refer_to !== null && // refer_to is not null
+            listKPIList.map(function(elm2){
+                return parseInt(elm2.id)
+            }).indexOf(parseInt(elm.refer_to))  === -1 // and refer_to must not be in current kpi list
+        )
+        var condition1 = (elm.refer_to === null)
+        return baseCondition && (condition1 || condition2)
+    })
+    filteredKPIParent.map(function(elm){
+        result[elm.id] = Object.assign({},elm)
+    })
+    console.log("PARENT KPI ===========================")
+    console.log(result)
+    return result
+}
+function calculateParentKPIWeight(kpi_list,excludeParentID){
+    var result = 0;
+    var dataSource = getKPIParent(kpi_list,excludeParentID) // KPI cha thi moi lay
+    for(var kpi_id in dataSource){
+        result += parseFloat(kpi_list[kpi_id].weight)
+    }
+    return result
+}
+
 
 function total_weight_on_level(val, parent_id) {
     var total_weight = 0;
@@ -425,7 +458,7 @@ function total_weight_on_level(val, parent_id) {
             total_weight += Number(val[key].weight);
         } else if (parent_id == null || parent_id == "" || listKey.indexOf(String(parent_id)) < 0) {
             // truong hop kpi cha duoc phan cong
-            if (listKey.indexOf(String(val[key].refer_to)) < 0 && val[key].old_weight > 0) {
+            if (listKey.indexOf(String(val[key].refer_to)) < 0 && val[key].weight > 0) {
                 // truong hop kpi cha duoc phan cong
                 total_weight += Number(val[key].weight);
             }
@@ -557,22 +590,39 @@ Vue.filter('decimalDisplay', {
 
 Vue.filter('filter_kpi_level', function (val) {
     var id = v.active_kpi_id;
-    if (id != '' && id != undefined && id > 0) {
+    if (id != '' && id != undefined && parseInt(id) > 0) {
         var parent_id = val[id].refer_to;
         return filter_kpi(val, parent_id);
     }
     return val;
 });
 
-Vue.filter('filter_total_weight', function (val) {
+// Vue.filter('filter_total_weight', function (val) {
+//     var total_weight = 0;
+//     var id = v.active_kpi_id;
+//     var parent_id = "";
+//     if (id != '' && id != undefined && id > 0) {
+//         parent_id = val[id].refer_to;
+//     }
+//     total_weight = total_weight_on_level(val, parent_id);
+//     return total_weight;
+// });
+Vue.filter('filter_total_weight_exclude_delayed', function (val) {
     var total_weight = 0;
     var id = v.active_kpi_id;
-    var parent_id = "";
-    if (id != '' && id != undefined && id > 0) {
-        parent_id = val[id].refer_to;
-    }
-    total_weight = total_weight_on_level(val, parent_id);
+    var dataSource = Object.assign({},val)
+    var excludeParentID = [parseFloat(id),]
+    total_weight = calculateParentKPIWeight(dataSource,excludeParentID);
     return total_weight;
+});
+
+Vue.filter('filter_cal_rate_weight', function (val, weight) {
+    var total_weight = 0;
+    var id = v.active_kpi_id;
+    var dataSource = Object.assign({},val)
+    var excludeParentID = [parseFloat(id),]
+    total_weight = calculateParentKPIWeight(dataSource,excludeParentID);
+    return weight * 100 / total_weight;
 });
 
 Vue.filter('filter_total_old_weight', function (val) {
@@ -598,27 +648,6 @@ Vue.filter('filter_cal_rate_old_weight', function (val, weight) {
     return weight * 100 / total_old_weight;
 });
 
-Vue.filter('filter_cal_rate_weight', function (val, weight) {
-    var total_weight = 0;
-    var id = v.active_kpi_id;
-    var parent_id = "";
-    if (id != '' && id != undefined && id > 0) {
-        parent_id = val[id].refer_to;
-    }
-    total_weight = total_weight_on_level(val, parent_id);
-    return weight * 100 / total_weight;
-});
-
-Vue.filter('filter_cal_rate_weight', function (val, weight) {
-    var total_weight = 0;
-    var id = v.active_kpi_id;
-    var parent_id = "";
-    if (id != '' && id != undefined && id > 0) {
-        parent_id = val[id].refer_to;
-    }
-    total_weight = total_weight_on_level(val, parent_id);
-    return weight * 100 / total_weight;
-});
 
 Vue.component('tag-search', {
     props: ['options', 'value'],
@@ -678,60 +707,61 @@ Vue.component('tag-search', {
 
 Vue.component('kpi-editable', {
     delimiters: ["${", "}$"],
-	props: ['kpi', 'field', 'can_edit'],
+    props: ['kpi', 'field', 'can_edit'],
     template: $('#kpi-edit-template').html(),
     data: function () {
-    	return {
-    		show_edit: false,
-        	edit_value: null
-    	}
+        return {
+            show_edit: false,
+            edit_value: null
+        }
     },
     ready: function () {
-    	this.edit_value = this.kpi[this.field];
+        this.edit_value = this.kpi[this.field];
     },
     methods: {
-    	edit_toggle: function () {
-    		if (!this.can_edit) {
-    			return;
-    		}
-    		this.show_edit = !this.show_edit;
-    		if (this.show_edit) {
-    			setTimeout(function () {
-    				$(".id-text-edit").focus();
-    			}, 300);
-    		}
-    	},
-    	save_change: function () {
-    		var _this = this;
-    		this.show_edit = false;
-    		if (this.edit_value == this.kpi[this.field]) {
-    			return;
-    		}
-    		var data = {
-    			id: this.kpi.id,
-    		}
-    		data[this.field] = this.edit_value;
-    		cloudjetRequest.ajax({
+
+        edit_toggle: function () {
+            if (!this.can_edit) {
+                return;
+            }
+            this.show_edit = !this.show_edit;
+            if (this.show_edit) {
+                setTimeout(function () {
+                    $(".id-text-edit").focus();
+                }, 300);
+            }
+        },
+        save_change: function () {
+            var _this = this;
+            this.show_edit = false;
+            if (this.edit_value == this.kpi[this.field]) {
+                return;
+            }
+            var data = {
+                id: this.kpi.id,
+            }
+            data[this.field] = this.edit_value;
+            cloudjetRequest.ajax({
                 method: "POST",
                 url: '/api/kpi/',
                 data: JSON.stringify(data),
                 success: function (data) {
-                	_this.kpi[_this.field] = data[_this.field];
+                    _this.kpi[_this.field] = data[_this.field];
                 }
             })
 
-    	}
+        }
     },
 });
 
 Vue.directive('autofocus', {
-	// When the bound element is inserted into the DOM...
-	inserted: function (el) {
-		// Focus the element
-		setTimeout(function () {
-			el.focus();
-		}, 100);
-	},
+    // When the bound element is inserted into the DOM...
+    inserted: function (el) {
+        // Focus the element
+        setTimeout(function () {
+            el.focus();
+        }, 100);
+    },
 })
 
 var v = new Vue({
@@ -867,8 +897,6 @@ var v = new Vue({
         status_upload_action_plan: true,
         action_plan_to_be_deleted: {},
         preview_attach_modal_type:'',
-
-        current_evidence: {},
         same_user: false,
         disable_upload: false,
         current_evidence: {},
@@ -876,118 +904,118 @@ var v = new Vue({
         //datatemp for kpilib
         visible: false,
         parent_category : [{
-                value:'dichvudoanhnghiep',
-                label: 'Dịch vụ doanh nghiệp',
-                number: '165',
-            },{
-                value: 'ketoan',
-                label: 'Kế toán',
-                number: '329',
-            },{
-                value: 'nhansu',
-                label: 'Nhân sự',
-                number: '504',
-            }],
+            value:'dichvudoanhnghiep',
+            label: 'Dịch vụ doanh nghiệp',
+            number: '165',
+        },{
+            value: 'ketoan',
+            label: 'Kế toán',
+            number: '329',
+        },{
+            value: 'nhansu',
+            label: 'Nhân sự',
+            number: '504',
+        }],
         child_category :[{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep1',
-                label: 'Doanh nghiệp tư nhân',
-                number: '12',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep2',
-                label: 'Thanh lý tiền tệ',
-                number: '13',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep3',
-                label: 'Cho vay nặng lãi',
-                number: '12',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep4',
-                label: 'Thuật toán KPI ',
-                number: '5',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep5',
-                label: 'Đánh giá KPI ',
-                number: '10',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep6',
-                label: 'Công nghiệp dịch vụ',
-                number: '10',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep7',
-                label: 'Kê khai tài khoản',
-                number: '12',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep8',
-                label: 'Giáo dục cá nhân',
-                number: '11',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep9',
-                label: 'Dịch vụ doanh nghiệp',
-                number: '10',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep10',
-                label: 'Doanh nghiệp Cung cầu',
-                number: '2',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep11',
-                label: 'Dịch vụ doanh nghiệp',
-                number: '16',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep12',
-                label: 'Kê khai tài khoản',
-                number: '14',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep13',
-                label: 'Dịch vụ doanh nghiệp ',
-                number: '15',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep14',
-                label: 'Dịch vụ doanh nghiệp',
-                number: '10',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep15',
-                label: 'Doanh nghiệp',
-                number: '20',
-            },{
-                parentvalue:'dichvudoanhnghiep',
-                value: 'doanhnghiep16',
-                label: 'Doanh nghiệp 2 ',
-                number: '6',
-            },{
-                parentvalue:'ketoan',
-                value: 'kehoachvabaocao',
-                label: 'Kế hoạch và báo cáo',
-                number: '30',
-            },{
-                parentvalue:'ketoan',
-                value: 'giaodich',
-                label: 'Giao dịch',
-                number: '30',
-            },{
-                parentvalue:'ketoan',
-                value: 'phantichchiphi',
-                label: 'Phân tích chi phí',
-                number: '20',
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep1',
+            label: 'Doanh nghiệp tư nhân',
+            number: '12',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep2',
+            label: 'Thanh lý tiền tệ',
+            number: '13',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep3',
+            label: 'Cho vay nặng lãi',
+            number: '12',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep4',
+            label: 'Thuật toán KPI ',
+            number: '5',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep5',
+            label: 'Đánh giá KPI ',
+            number: '10',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep6',
+            label: 'Công nghiệp dịch vụ',
+            number: '10',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep7',
+            label: 'Kê khai tài khoản',
+            number: '12',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep8',
+            label: 'Giáo dục cá nhân',
+            number: '11',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep9',
+            label: 'Dịch vụ doanh nghiệp',
+            number: '10',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep10',
+            label: 'Doanh nghiệp Cung cầu',
+            number: '2',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep11',
+            label: 'Dịch vụ doanh nghiệp',
+            number: '16',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep12',
+            label: 'Kê khai tài khoản',
+            number: '14',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep13',
+            label: 'Dịch vụ doanh nghiệp ',
+            number: '15',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep14',
+            label: 'Dịch vụ doanh nghiệp',
+            number: '10',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep15',
+            label: 'Doanh nghiệp',
+            number: '20',
+        },{
+            parentvalue:'dichvudoanhnghiep',
+            value: 'doanhnghiep16',
+            label: 'Doanh nghiệp 2 ',
+            number: '6',
+        },{
+            parentvalue:'ketoan',
+            value: 'kehoachvabaocao',
+            label: 'Kế hoạch và báo cáo',
+            number: '30',
+        },{
+            parentvalue:'ketoan',
+            value: 'giaodich',
+            label: 'Giao dịch',
+            number: '30',
+        },{
+            parentvalue:'ketoan',
+            value: 'phantichchiphi',
+            label: 'Phân tích chi phí',
+            number: '20',
         }, {
             parentvalue: 'nhansu',
             value: 'conguoi',
             label: 'Con người',
-             number: '20',
+            number: '20',
         }],
         options_category: [{
             value: 'dichvudoanhnghiep',
@@ -1085,10 +1113,23 @@ var v = new Vue({
         },
     },
     computed: {
+        parentKPIs: function (){
+            var self = this;
+            return getKPIParent(self.kpi_list,[]);
+        },
         adjust_min_performance: function () {
             var self = this;
             return ((self.adjusting_kpi.achievement_calculation_method_extra.bottom.target / self.adjusting_kpi['month_' + self.adjusting_kpi.adjusting_month + '_target']) * 100).toFixed(2);
         },
+        filtered_kpi_level: function(){
+            var  self =  this;
+            var id = self.active_kpi_id;
+            if (id != '' && id != undefined && parseInt(id) > 0) {
+                var parent_id = self.kpi_list[id].refer_to;
+                return filter_kpi(self.kpi_list, parent_id);
+            }
+            return self.kpi_list;
+        }
 
     },
     ready: function () {
@@ -1118,10 +1159,6 @@ var v = new Vue({
         this.same_user = (COMMON.UserRequestID == COMMON.UserViewedId) ? true : false;  // -> hot fix, has_perm(KPI__EDITING) => actor == target cho phep nhan vien tu chinh sua kpi, nhung logic moi thi khong cho phep
         this.get_surbodinate_user_viewed();
 
-        //get all kpi in kpilib when query_kpilib: ' ',
-        this.search_kpi_library();
-        // init data for kpilib
-        this.get_data_for_kpilib();
     },
     filters: {
         //marked: marked
@@ -1148,10 +1185,14 @@ var v = new Vue({
         }
     },
     watch: {
+        parentKPIs: function(val,oldVal){
+                            this.getListGroupV2();
+
+        },
         kpi_list: {
             handler: function (val, oldVal) {
                 this.calculate_total_weight();
-                this.getListGroup();
+                // this.getListGroup();
             }
             //,deep: true <-- slow
         },
@@ -1187,7 +1228,7 @@ var v = new Vue({
         },
         filter_department: {
             handler: function (newVal, oldVal) {
-            	var _this = this;
+                var _this = this;
                 if (newVal) {
                     this.FUNCTIONS = this.DEPARTMENTS[newVal] || {};
                 } else {
@@ -1219,12 +1260,13 @@ var v = new Vue({
             }
         },
         searched_kpis: {
-                handler: function(){
-                   kpi_lib.data_kpi_editor  = v;
-                   kpi_lib.searched_kpis_lib = v.searched_kpis;
+            handler: function(){
+                if(this.organization.enable_kpi_lib) {
+                    kpi_lib.data_kpi_editor = v;
+                    kpi_lib.searched_kpis_lib = v.searched_kpis;
                 }
-
             }
+        }
     },
     created: function(){
         try{
@@ -1235,6 +1277,41 @@ var v = new Vue({
         }
     },
     methods: {
+        getKPIParent: function(){
+            var self  = this;
+            return getKPIParent(self.kpi_list,[]);
+        },
+        constructOldWeight: function(){
+            var self = this;
+            for(var kpi_id in self.kpi_list){
+                self.kpi_list[kpi_id].old_weight = self.kpi_list[kpi_id].weight;
+            }
+            self.$set('kpi_list',Object.assign({},self.kpi_list))
+        },
+        inputKPIWeight: function(val){
+            var self = this;
+            if (parseFloat(val) === 0){
+
+            }
+        },
+        findGroupBySlug: function(slug,dataSource){
+            var self = this;
+            var listGroups = Object.keys(dataSource).map(function(elm){
+                return dataSource[elm]
+            })
+            var groups = listGroups.slice().filter(function(elm){
+                return elm.slug === slug
+            })
+            return groups;
+        },
+        findGroupByID: function(id,dataSource){
+            var self = this;
+            var index = Object.keys(self.list_group).map(
+                function(e){
+                    return self.list_group[e].id
+                }).indexOf(id);
+            return index
+        },
         getListGroup: function(){
             //debugger;
             var listGroup ={};
@@ -1248,16 +1325,17 @@ var v = new Vue({
                     tmp.push(this.kpi_list[kpi].bsc_category)
                     group_in_category[this.kpi_list[kpi].bsc_category] = []
                 }
-                if (group_in_category[this.kpi_list[kpi].bsc_category].indexOf(this.kpi_list[kpi].refer_group_name) == -1
+                if (group_in_category[this.kpi_list[kpi].bsc_category].indexOf(this.kpi_list[kpi].kpi_group_id) == -1
                     && (this.kpi_list[kpi].refer_to == null || this.kpi_list[this.kpi_list[kpi].refer_to] == null)) {
                     listGroup[count] = {
                         name: this.kpi_list[kpi].refer_group_name,
                         slug: this.kpi_list[kpi].kpi_refer_group,
                         category: this.kpi_list[kpi].bsc_category,
+                        refer_to: this.kpi_list[kpi].refer_to,
                         id: this.kpi_list[kpi].kpi_group_id
                     };
 
-                    group_in_category[this.kpi_list[kpi].bsc_category].push(this.kpi_list[kpi].refer_group_name);
+                    group_in_category[this.kpi_list[kpi].bsc_category].push(this.kpi_list[kpi].kpi_group_id);
                     count += 1;
                     //console.log(group_in_category)
                 }
@@ -1267,8 +1345,33 @@ var v = new Vue({
             // console.log("======================tttttttttt===================")
             // console.log(this.list_group)
         },
+        getListGroupV2: function(){
+            //debugger;
+            var self = this;
+            var listGroup = {};
+            var index = 0;
+            for(var kpi_id in self.parentKPIs){
+                var group = {
+                    name: self.kpi_list[kpi_id].refer_group_name,
+                    slug: self.kpi_list[kpi_id].kpi_refer_group,
+                    category: self.kpi_list[kpi_id].bsc_category,
+                    refer_to: null || self.kpi_list[kpi_id].refer_to, // if this KPI is assigned to user
+                    id: self.kpi_list[kpi_id].group_kpi
+                }
+                //
+                var matchedGroup = self.findGroupByID(group.id, listGroup)
+                if (matchedGroup == -1){
+                    self.$set('list_group['+ index + ']', group)
+                    index++
+                }
+
+            }
+            // self.list_group = listGroup;
+            // console.log("====================== list group ===================")
+            // console.log(this.list_group)
+        },
         delete_all_kpis: function () {
-           cloudjetRequest.ajax({
+            cloudjetRequest.ajax({
                 method: "POST",
                 url: '/api/kpi/services/',
                 data: {
@@ -1283,40 +1386,26 @@ var v = new Vue({
         },
         disable_edit_target: function(kpi){
             if (this.is_user_system) return false;
-            if (COMMON.UserId==COMMON.UserViewedId) return true;
-            return (!kpi.enable_edit || !this.organization.allow_edit_monthly_target) || kpi.weight == 0;
+            console.log("target:", kpi.id)
+            return !(kpi.enable_edit && this.organization.allow_edit_monthly_target && this.organization.enable_to_edit);
 
+        },
+        can_edit_current_month: function (current_month, monthly_review_lock){ //check whether currrent month is allowed to edit
+            return monthly_review_lock == "allow_all"?true: current_month==monthly_review_lock
         },
         disable_review_kpi: function(parent_id, current_month){
             if (this.is_user_system) return false;
-            var is_parent = COMMON.UserId == parent_id;
-            if (is_parent){
-                if (!this.organization.enable_to_edit){
-                    return true;
-                }
-                else {
-                    if (this.organization.monthly_review_lock=="allow_all") return false;
-                    else return !(current_month == this.organization.monthly_review_lock);
-                }
+            var is_manager = COMMON.UserId != COMMON.UserViewedId;
+            var current_month_locked = !(this.can_edit_current_month(current_month, this.organization.monthly_review_lock));
+            if (is_manager){ // if current Login user is parent of user viewed
+                return ( !this.organization.allow_manager_review || current_month_locked ) // manager can edit if enable_to_edit not pass
             }
             else {
-                if (!this.organization.allow_employee_review){
-                    return true;
-                }
-                else{
-                    if (this.organization.monthly_review_lock=="allow_all") return false;
-                    else return !(current_month == this.organization.monthly_review_lock);
-                }
+                return ( !this.organization.allow_employee_review || current_month_locked ) // employee can edit(review) kpi only if not pass self_review_date
             }
-
-
-        },
-        disable_edit_calc_method(){
-            if (this.is_user_system) return false;
-            return !(COMMON.UserId!=COMMON.UserViewedId && this.organization.allow_edit_monthly_target)
         },
         hide_modal: function (modal_id) {
-        	$(modal_id).modal('hide');
+            $(modal_id).modal('hide');
         },
         check_email_delete: function () {
             var email = this.email_confirm.replace(/\s/g,'');
@@ -1329,9 +1418,9 @@ var v = new Vue({
         },
 
         reset_modal_delete: function () {
-          var that = this;
-          that.status_confirm = true;
-          that.email_confirm = '';
+            var that = this;
+            that.status_confirm = true;
+            that.email_confirm = '';
         },
         search_kpi_library: function () {
             var self = this;
@@ -1366,7 +1455,8 @@ var v = new Vue({
                 url: '/api/v2/kpilib/?' + params,
                 success: function (data) {
                     self.searched_kpis = data;
-                    kpi_lib.isLoading = false;
+                    if(self.organization.enable_kpi_lib == true)
+                        kpi_lib.isLoading = false;
                 }
             })
         },
@@ -1578,22 +1668,22 @@ var v = new Vue({
                 _all = (JSON.parse(localStorage.getItem('history_search')) != null) ? JSON.parse(localStorage.getItem('history_search')) : [];
                 _storage = (typeof _all[user_current.indexOf(COMMON.UserRequestEmail)] != 'undefined') ? _all[user_current.indexOf(COMMON.UserRequestEmail)] : [];
 
-				// Check user_id has existed in list
-				var has_user = false;
-				_storage.forEach(function(e, i){
-					if(that.list_user_searched[p].user_id == e.user_id){
-						if (i>0 && has_user==false){
-							// Move item to first in array
-							var temp = _storage[0];
-							_storage[0] = e;
-							_storage[i] = temp;
-						}
-						has_user = true;
-						return;
-					}
-				})
-				// If user hasn't in list, push user to list
-				if (has_user==false)_storage.insert(0, that.list_user_searched[p]);
+                // Check user_id has existed in list
+                var has_user = false;
+                _storage.forEach(function(e, i){
+                    if(that.list_user_searched[p].user_id == e.user_id){
+                        if (i>0 && has_user==false){
+                            // Move item to first in array
+                            var temp = _storage[0];
+                            _storage[0] = e;
+                            _storage[i] = temp;
+                        }
+                        has_user = true;
+                        return;
+                    }
+                })
+                // If user hasn't in list, push user to list
+                if (has_user==false)_storage.insert(0, that.list_user_searched[p]);
                 _all[user_current.indexOf(COMMON.UserRequestEmail)] = _storage
                 if (_all[user_current.indexOf(COMMON.UserRequestEmail)].length > 3) _all[user_current.indexOf(COMMON.UserRequestEmail)].splice(3, 1);
                 localStorage.setItem('history_search', JSON.stringify(_all));
@@ -2273,10 +2363,10 @@ var v = new Vue({
             that.total_weight_bygroup = {'A': 0, 'B': 0, 'C': 0, 'O': 0, 'G': 0};
             that.total_kpis_bygroup = {'A': 0, 'B': 0, 'C': 0, 'O': 0, 'G': 0};
             that.total_edit_weight = {'financial':0,'financial_ratio':0,'financial_total':0,
-                    'customer':0,'customer_ratio':0,'customer_total':0,
-                    'internal':0,'internal_ratio':0,'internal_total':0,
-                    'learninggrowth':0,'learninggrowth_ratio':0,'learninggrowth_total':0,
-                    'other':0,'other_ratio':0,'other_total':0};
+                'customer':0,'customer_ratio':0,'customer_total':0,
+                'internal':0,'internal_ratio':0,'internal_total':0,
+                'learninggrowth':0,'learninggrowth_ratio':0,'learninggrowth_total':0,
+                'other':0,'other_ratio':0,'other_total':0};
 
 
             Object.keys(that.kpi_list).forEach(function (key) {
@@ -2383,12 +2473,13 @@ var v = new Vue({
             that.kpi_list_cache.push(kpis);
         },
         resume_weight: function () {
-            that = this;
+            var that = this;
             that.status_error = false;
+            console.log("Triggered resume weight")
             Object.keys(that.kpi_list).forEach(function (key) {
                 that.kpi_list[key].weight = that.kpi_list[key].old_weight;
             })
-            this.$set('kpi_list', that.kpi_list);
+            that.$set('kpi_list',Object.assign({}, that.kpi_list));
         },
         update_kpi_default_real: function (kpi, show_blocking_modal) {
             var data = {};
@@ -2465,9 +2556,9 @@ var v = new Vue({
             this.unique_code_cache = kpi.unique_code;
             $('#kpi-uniquecode').modal();
         },
-        update_group_name: function (kpi) {
-            //$('.group-header-kpi-name' + kpi.id).text(kpi.refer_group_name);
-        },
+        // update_group_name: function (kpi) {
+        //     //$('.group-header-kpi-name' + kpi.id).text(kpi.refer_group_name);
+        // },
         update_kpi: function (kpi, show_blocking_modal, callback) {
             var show_blocking_modal = (typeof show_blocking_modal !== 'undefined') ? show_blocking_modal : false;
 
@@ -2487,7 +2578,7 @@ var v = new Vue({
             }
             //    Pace.start();
             this.calculate_total_weight();
-            that = this;
+            var that = this;
             data = {};
             data['id'] = kpi.id;
             data['name'] = kpi.name;
@@ -2504,14 +2595,15 @@ var v = new Vue({
                 success: function (data) {
                     console.log("success");
                     that.get_current_employee_performance();
+                    that.$set('kpi_list['+kpi.id+ ']',data)
                     //$('.group-header-kpi-name' + kpi.id).text(kpi.refer_group_name);
                     if (typeof callback == "function") {
-                    	callback(0);
+                        callback(0);
                     }
                 },
                 error: function (obj) {
-                	if (callback) {
-                    	callback(1);
+                    if (callback) {
+                        callback(1);
                     }
                 }
             });
@@ -2976,36 +3068,36 @@ var v = new Vue({
         },
 
         handleFile:function (e){
-                $('.form-start').hide();
-                var width = 1;
-                var file = $('#file-upload')[0].files[0];
-                var file_name = $('#file-upload')[0].files[0].name;
-                that.filename = file_name;
-                var allowedExtensions = /(\.jpg|\.jpeg|\.png|\.docx|\.pdf|\.xls|\.xlsx|\.doc|\.bmp)$/i;
-                if(!allowedExtensions.exec(file_name) || file.size/1024/1024 > 5) {
-                    that.status_upload_evidence = false;
-                    return false;
-                }
-                else{
-                    that.status_upload_evidence = true;
-                    var id = setInterval(frame, 10);
-                }
-                function frame() {
-                    if (width >= 100) {
-                        clearInterval(id);
-                        $("#ico-circle-check").css('color','#7ed321');
-                        $("#myBar").hide();
-                        $("#title-loading").hide();
-                        $("#e-content").show();
-                        $("#btn-cancel-evi").show();
-                        $("#btn-save-evi").show();
+            $('.form-start').hide();
+            var width = 1;
+            var file = $('#file-upload')[0].files[0];
+            var file_name = $('#file-upload')[0].files[0].name;
+            that.filename = file_name;
+            var allowedExtensions = /(\.jpg|\.jpeg|\.png|\.docx|\.pdf|\.xls|\.xlsx|\.doc|\.bmp)$/i;
+            if(!allowedExtensions.exec(file_name) || file.size/1024/1024 > 5) {
+                that.status_upload_evidence = false;
+                return false;
+            }
+            else{
+                that.status_upload_evidence = true;
+                var id = setInterval(frame, 10);
+            }
+            function frame() {
+                if (width >= 100) {
+                    clearInterval(id);
+                    $("#ico-circle-check").css('color','#7ed321');
+                    $("#myBar").hide();
+                    $("#title-loading").hide();
+                    $("#e-content").show();
+                    $("#btn-cancel-evi").show();
+                    $("#btn-save-evi").show();
 
-                    } else {
-                        width++;
-                        $("#percentage").text(width+'%');
-                        $("#myBar").css('width', width + '%');
-                    }
+                } else {
+                    width++;
+                    $("#percentage").text(width+'%');
+                    $("#myBar").css('width', width + '%');
                 }
+            }
         },
 
         // Done
@@ -3104,7 +3196,7 @@ var v = new Vue({
                 success: function (res) {
                     that.$set('employee_performance', res);
                     that.get_backups_list(true);
-                    console.log('jahskjfkjsdaasdh');
+                    // console.log('jahskjfkjsdaasdh');
                     that.$children.map(function (elem, index, children_array) {
                         elem.$emit('fetch_exscore')
                     })
@@ -3118,6 +3210,7 @@ var v = new Vue({
             var that = this;
             cloudjetRequest.ajax({
                 type: 'get',
+                async: false,
                 url: COMMON.LinkOrgAPI,
                 success: function (data) {
                     that.$set('organization', data);
@@ -3531,8 +3624,8 @@ var v = new Vue({
             that.calculate_total_weight();
         },
         show_kpi_msg: function (status) {
-       		if (status == 0) {
-       			swal({
+            if (status == 0) {
+                swal({
                     type: 'success',
                     title: gettext("Successful"),
                     text: gettext("Change KPI's weight successful!"),
@@ -3540,16 +3633,16 @@ var v = new Vue({
                     timer: 2000,
                 })
                 $("#edit-all-weight-modal").modal('hide');
-       		} else {
-       			swal({
-       				type: 'error',
-       				title: gettext("Unsuccess"),
+            } else {
+                swal({
+                    type: 'error',
+                    title: gettext("Unsuccess"),
                     text: gettext("Change KPI's weight was unsuccessful!"),
                     showConfirmButton: true,
                     timer: 2000,
                 })
-       		}
-       	},
+            }
+        },
         accept_edit_weight: function() {
             var that = this;
             that.kpi_list_cache.forEach(function(kpi){
@@ -4060,7 +4153,7 @@ var v = new Vue({
         },
 
         checkChild: function (kpi_id) {
-            that = this;
+            var that = this;
             that.is_child = false;
 
             if (that.kpi_list[kpi_id].refer_to_id == 'None') {
@@ -4189,20 +4282,20 @@ var v = new Vue({
             this.selected_kpilib = k;
         },
         average_3_month: function (employee_performance) {
-        	var count = 0;
-        	var total = 0;
-        	['month_1_score', 'month_2_score', 'month_3_score'].forEach(function (key) {
-        		// if (key != 'current' && employee_performance[key] > 0) { # remove key since it was not neccessary
-        		if (employee_performance[key] > 0) {
-        			total += employee_performance[key];
-        			count += 1;
-        		}
-        	})
+            var count = 0;
+            var total = 0;
+            ['month_1_score', 'month_2_score', 'month_3_score'].forEach(function (key) {
+                // if (key != 'current' && employee_performance[key] > 0) { # remove key since it was not neccessary
+                if (employee_performance[key] > 0) {
+                    total += employee_performance[key];
+                    count += 1;
+                }
+            })
 
-        	if (count > 0) {
-        		return total / count;
-        	}
-        	return total;
+            if (count > 0) {
+                return total / count;
+            }
+            return total;
         },
         get_prefix_category: function(cat) {
             if (cat == "financial")
@@ -4231,6 +4324,7 @@ var v = new Vue({
                         dictResult[a.id] = a;
                     })
                     that.kpi_list = dictResult;
+                    // that.parentKPIs = JSON.parse(JSON.stringify(dictResult));
                     console.log(that.kpi_list);
                 },
                 error: function (a, b, c) {
@@ -4260,14 +4354,24 @@ var v = new Vue({
             this.update_quarter_target(kpi);
             this.kpi_ready(kpi.id, controller_prefix, ready);
         },
-        get_data_for_kpilib: function(){
-            kpi_lib.options = this.options_category;
-            kpi_lib.parent_cate = this.parent_category;
-            kpi_lib.child_cate = this.child_category;
-            kpi_lib.BSC_CATEGORY = this.BSC_CATEGORY;
-            kpi_lib.EXTRA_FIELDS_KPI = this.EXTRA_FIELDS;
+        init_data_for_kpilib: function(){
+            if(self.organization.enable_kpi_lib == true) {
+                kpi_lib.options = this.options_category;
+                kpi_lib.parent_cate = this.parent_category;
+                kpi_lib.child_cate = this.child_category;
+                kpi_lib.BSC_CATEGORY = this.BSC_CATEGORY;
+                kpi_lib.EXTRA_FIELDS_KPI = this.EXTRA_FIELDS;
+            }
         },
+        get_data_kpilib: function(){
+            //get all kpi in kpilib when query_kpilib: ' ',
+            this.search_kpi_library();
+            // init data for kpilib
+            this.init_data_for_kpilib();
+        }
+
     },
+
     events: {
         'update_lock_exscore_review': function (option) {
             var that = this
@@ -4296,7 +4400,8 @@ var v = new Vue({
             console.log('triggered fetch_user_exscore')
             this.fetch_exscore();
         }
-    }
+    },
+
 });
 
 v.get_current_quarter();
