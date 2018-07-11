@@ -1306,11 +1306,13 @@ var v = new Vue({
         },
         findGroupByID: function(id,dataSource){
             var self = this;
-            var index = Object.keys(self.list_group).map(
-                function(e){
-                    return self.list_group[e].id
-                }).indexOf(id);
-            return index
+            var listGroups = Object.keys(dataSource).map(function(elm){
+                return dataSource[elm]
+            })
+            var groups = listGroups.slice().filter(function(elm){
+                return parseInt(elm.id) === parseInt(id)
+            })
+            return groups;
         },
         getListGroup: function(){
             //debugger;
@@ -1348,7 +1350,7 @@ var v = new Vue({
         getListGroupV2: function(){
             //debugger;
             var self = this;
-            var listGroup = {};
+            var listGroup = [];
             var index = 0;
             for(var kpi_id in self.parentKPIs){
                 var group = {
@@ -1360,7 +1362,7 @@ var v = new Vue({
                 }
                 //
                 var matchedGroup = self.findGroupByID(group.id, listGroup)
-                if (matchedGroup == -1){
+                if (matchedGroup.length === 0){
                     self.$set('list_group['+ index + ']', group)
                     index++
                 }
