@@ -1307,9 +1307,9 @@ var v = new Vue({
         findGroupByID: function(id,dataSource){
             var self = this;
             var listGroups = Object.keys(dataSource).map(function(elm){
-                return dataSource[elm].id
+                return parseInt(dataSource[elm].id)
             })
-            var found = listGroups.indexOf(id)
+            var found = listGroups.indexOf(parseInt(id))
             return found;
         },
         getListGroup: function(){
@@ -1350,7 +1350,10 @@ var v = new Vue({
             var self = this;
             var listGroup = [];
             var index = 0;
+            console.log("parent kpi", self.parentKPIs);
             for(var kpi_id in self.parentKPIs){
+
+                console.log("elm:", kpi_id);
                 var group = {
                     name: self.kpi_list[kpi_id].refer_group_name,
                     slug: self.kpi_list[kpi_id].kpi_refer_group,
@@ -1359,13 +1362,15 @@ var v = new Vue({
                     id: self.kpi_list[kpi_id].group_kpi
                 }
                 //
-                var matchedGroup = self.findGroupByID(group.id, self.list_group)
-                if (matchedGroup == -1{
+                var matchedGroup = self.findGroupByID(group.id, listGroup);
+                // if found group by id that does not exist in current listGroup -> push into list Group
+                if (matchedGroup == -1){
+                    console.log("found: ", group);
                     listGroup.push(group);
                 }
 
             }
-            self.list_group = listGroup;
+            self.$set('list_group', listGroup);
             // console.log("====================== list group ===================")
             // console.log(this.list_group)
         },
