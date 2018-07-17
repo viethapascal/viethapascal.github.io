@@ -1365,12 +1365,13 @@ var v = new Vue({
                 var matchedGroup = self.findGroupByID(group.id, listGroup);
                 // if found group by id that does not exist in current listGroup -> push into list Group
                 if (matchedGroup == -1){
-                    console.log("found: ", group);
+                    self.$set('list_group['+ index + ']', group)
+                    index++;
                     listGroup.push(group);
                 }
 
             }
-            self.$set('list_group', listGroup);
+            // self.list_group = listGroup;
             // console.log("====================== list group ===================")
             // console.log(this.list_group)
         },
